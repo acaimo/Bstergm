@@ -1,0 +1,162 @@
+[
+    {
+        "file": "/Users/albertocaimo/Documents/GitHub/Bstergm/src/include_stubs.c",
+        "file_last_write": 1793050374.0,
+        "definitions": [],
+        "hidden": false
+    },
+    {
+        "file": "/Users/albertocaimo/Documents/GitHub/Bstergm/src/init.c",
+        "file_last_write": 1793050374.0,
+        "definitions": [
+            {
+                "usr": "c:@F@R_init_Bstergm",
+                "kind": 6,
+                "parent_name": "",
+                "name": "R_init_Bstergm(DllInfo *)",
+                "file": "/Users/albertocaimo/Documents/GitHub/Bstergm/src/init.c",
+                "line": 6,
+                "column": 6,
+                "hidden": false
+            }
+        ],
+        "hidden": false
+    },
+    {
+        "file": "/Users/albertocaimo/Documents/GitHub/Bstergm/src/signed_terms.c",
+        "file_last_write": 1793050374.0,
+        "definitions": [
+            {
+                "usr": "c:signed_terms.c@64@macro@SA_POS",
+                "kind": 9,
+                "parent_name": "",
+                "name": "SA_POS",
+                "file": "/Users/albertocaimo/Documents/GitHub/Bstergm/src/signed_terms.c",
+                "line": 4,
+                "column": 9,
+                "hidden": false
+            },
+            {
+                "usr": "c:signed_terms.c@82@macro@SA_ACT",
+                "kind": 9,
+                "parent_name": "",
+                "name": "SA_ACT",
+                "file": "/Users/albertocaimo/Documents/GitHub/Bstergm/src/signed_terms.c",
+                "line": 5,
+                "column": 9,
+                "hidden": false
+            },
+            {
+                "usr": "c:signed_terms.c@1116@macro@SA_FOR_SUPPORT",
+                "kind": 9,
+                "parent_name": "",
+                "name": "SA_FOR_SUPPORT",
+                "file": "/Users/albertocaimo/Documents/GitHub/Bstergm/src/signed_terms.c",
+                "line": 48,
+                "column": 9,
+                "hidden": false
+            },
+            {
+                "usr": "c:@SA@SignAux",
+                "kind": 3,
+                "parent_name": "",
+                "name": "SignAux",
+                "file": "/Users/albertocaimo/Documents/GitHub/Bstergm/src/signed_terms.c",
+                "line": 7,
+                "column": 9,
+                "hidden": false
+            },
+            {
+                "usr": "c:@T@SignAux",
+                "kind": 8,
+                "parent_name": "",
+                "name": "SignAux",
+                "file": "/Users/albertocaimo/Documents/GitHub/Bstergm/src/signed_terms.c",
+                "line": 16,
+                "column": 3,
+                "hidden": false
+            },
+            {
+                "usr": "c:signed_terms.c@F@sa_ut",
+                "kind": 6,
+                "parent_name": "",
+                "name": "sa_ut(Vertex, Vertex, Vertex)",
+                "file": "/Users/albertocaimo/Documents/GitHub/Bstergm/src/signed_terms.c",
+                "line": 18,
+                "column": 22,
+                "hidden": false
+            },
+            {
+                "usr": "c:signed_terms.c@F@sa_flag",
+                "kind": 6,
+                "parent_name": "",
+                "name": "sa_flag(const SignAux *, Vertex, Vertex)",
+                "file": "/Users/albertocaimo/Documents/GitHub/Bstergm/src/signed_terms.c",
+                "line": 24,
+                "column": 29,
+                "hidden": false
+            },
+            {
+                "usr": "c:signed_terms.c@F@sa_sign_of",
+                "kind": 6,
+                "parent_name": "",
+                "name": "sa_sign_of(unsigned char)",
+                "file": "/Users/albertocaimo/Documents/GitHub/Bstergm/src/signed_terms.c",
+                "line": 28,
+                "column": 19,
+                "hidden": false
+            },
+            {
+                "usr": "c:signed_terms.c@F@sa_sign",
+                "kind": 6,
+                "parent_name": "",
+                "name": "sa_sign(const SignAux *, Vertex, Vertex)",
+                "file": "/Users/albertocaimo/Documents/GitHub/Bstergm/src/signed_terms.c",
+                "line": 32,
+                "column": 19,
+                "hidden": false
+            },
+            {
+                "usr": "c:signed_terms.c@F@sa_match",
+                "kind": 6,
+                "parent_name": "",
+                "name": "sa_match(int, int, int)",
+                "file": "/Users/albertocaimo/Documents/GitHub/Bstergm/src/signed_terms.c",
+                "line": 36,
+                "column": 19,
+                "hidden": false
+            },
+            {
+                "usr": "c:signed_terms.c@F@sa_ptype",
+                "kind": 6,
+                "parent_name": "",
+                "name": "sa_ptype(int, int)",
+                "file": "/Users/albertocaimo/Documents/GitHub/Bstergm/src/signed_terms.c",
+                "line": 44,
+                "column": 19,
+                "hidden": false
+            },
+            {
+                "usr": "c:signed_terms.c@F@sa_update_pair",
+                "kind": 6,
+                "parent_name": "",
+                "name": "sa_update_pair(SignAux *, Vertex, Vertex, int, int, int)",
+                "file": "/Users/albertocaimo/Documents/GitHub/Bstergm/src/signed_terms.c",
+                "line": 148,
+                "column": 20,
+                "hidden": false
+            },
+            {
+                "usr": "c:signed_terms.c@F@sa_tri_count",
+                "kind": 6,
+                "parent_name": "",
+                "name": "sa_tri_count(int, int, unsigned int, unsigned int, unsigned int)",
+                "file": "/Users/albertocaimo/Documents/GitHub/Bstergm/src/signed_terms.c",
+                "line": 262,
+                "column": 28,
+                "hidden": false
+            }
+        ],
+        "hidden": false
+    }
+]

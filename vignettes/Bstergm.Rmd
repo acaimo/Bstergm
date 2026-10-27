@@ -1,0 +1,355 @@
+---
+title: "Bayesian separable temporal ERGMs for binary and signed networks"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Bayesian separable temporal ERGMs for binary and signed networks}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", fig.width = 7, fig.height = 4.5,
+                      fig.align = "center", out.width = "100%")
+```
+
+**Bstergm** fits Bayesian separable temporal ERGMs to sequences of binary
+networks, with `bstergm()`, and of signed networks, with `bstergm_sign()`.
+This vignette analyses the U.S. Senate data of Caimo and Gollini (2025): the
+signs with `bstergm_sign()` and the interactions, a sequence of binary
+networks, with `bstergm()`.
+
+## The model
+
+A signed network $y_t$ on $n$ nodes has ties $y_{ij,t} \in \{-1, 0, +1\}$.
+It is written as an *interaction* layer $x_t$ ($x_{ij,t} = |y_{ij,t}|$) and a
+*sign* layer $z_t$ ($z_{ij,t} = 1$ if $y_{ij,t} = +1$), which is only defined
+for interacting pairs.
+
+As in the separable temporal ERGM of Krivitsky and Handcock (2014), each
+transition $y_{t-1} \to y_t$ is split into a *formation* network
+$y^F_t = y_{t-1} \cup y_t$ and a *persistence* network
+$y^P_t = y_{t-1} \cap y_t$, for both layers. The model is
+$$
+p(y_t \mid y_{t-1}) =
+\prod_{U \in \{F, P\}} p(x^U_t \mid y_{t-1}; \xi^U)\; p(z^U_t \mid x^U_t, y_{t-1}; \zeta^U),
+$$
+where every factor is an ERGM. The sign model $p(z^U_t \mid x^U_t, \cdot\,; \zeta^U)$
+lets the sign of every interacting dyad of $x^U_t$ vary while the interactions
+stay fixed. Its log-odds of a positive sign are
+$\zeta^{U\top} \Delta_{ij} s(z^U_t; x^U_t, y_{t-1})$. Under independent priors
+the posterior factorises into four independent parts:
+$\zeta^F$, $\zeta^P$, $\xi^F$ and $\xi^P$.
+
+## Data
+
+`senators70_am` contains the signed co-sponsorship networks of the 70
+senators who served in the 99th to 102nd Congress (Neal, 2020). As in the
+paper, we use the first three Congresses (1985–1991).
+
+```{r data}
+library(Bstergm)
+data(senators70_am)
+
+senate <- signed_series(senators70_am[1:3],
+                        vertex.attr = attr(senators70_am$S99, "senators"))
+senate
+```
+
+`summary()` shows the formation and persistence networks of each transition
+and the signed triangle census. Balance theory says that triangles with one or
+three positive ties (`+++`, `+--`) should be common and those with two
+(`++-`) rare.
+
+```{r summary}
+summary(senate)
+```
+
+```{r plot-data, fig.height = 3}
+plot(senate, vertex.col = "Party")
+```
+
+Dark solid lines are positive ties and light dotted lines negative ties;
+Democrats are dark and Republicans light grey.
+
+## Signed-network statistics
+
+The sign process is modelled on the *positive* ties of each formation or
+persistence network. The interacting pairs are fixed and stored with the
+network, so negative ties are the interacting pairs that are not positive.
+`as_signed_network()` builds this representation for a single network. Any
+ergm term then describes positive ties, and the signed terms of the package
+also use the negative ties:
+
+```{r stats}
+nw <- as_signed_network(senators70_am$S99,
+                        vertex.attr = attr(senators70_am$S99, "senators"))
+summary(nw ~ edges + nodematch("Party", diff = TRUE, levels = "R") +
+          gwesf_pos(0.6) + gwese_pos(0.6) + gwese_neg(0.6) + triangle_signed())
+```
+
+| paper | term | description |
+|---|---|---|
+| $\text{edges}^+$ | `edges` | number of positive ties |
+| $\text{homophily}^+(\text{rep})$ | `nodematch("Party", diff = TRUE, levels = "R")` | positive ties between Republicans |
+| $\text{gwdegree}^+(0.2)$ | `gwdegree(0.2, fixed = TRUE)` | geometrically weighted positive degree |
+| $\text{gwesf}^+(0.6)$ | `gwesf_pos(0.6)` | positive ties weighted by shared friends |
+| $\text{gwese}^+(0.6)$ | `gwese_pos(0.6)` | positive ties weighted by shared enemies |
+| $\text{gwese}^-(0.6)$ | `gwese_neg(0.6)` | negative ties weighted by shared enemies |
+
+These terms are implemented in C. They give the same values as the multilayer
+terms of **ergm.multi** used in the first version of the package, which are
+still supported but considerably slower:
+
+```{r multilayer}
+positive <- ~positive
+negative <- ~(active & !positive)
+z <- network::as.network((senators70_am$S99 > 0) * 1, directed = FALSE)
+x <- network::as.network((senators70_am$S99 != 0) * 1, directed = FALSE)
+summary(~ gwespL(0.6, fixed = TRUE, L.base = positive, Ls.path = list(positive, positive)) +
+          gwespL(0.6, fixed = TRUE, L.base = positive, Ls.path = list(negative, negative)) +
+          gwespL(0.6, fixed = TRUE, L.base = negative, Ls.path = list(negative, negative)),
+        basis = Layer(positive = z, active = x))
+```
+
+## Posterior sampling
+
+`bstergm_sign()` samples the posterior of the formation and persistence
+parameters of the sign process with the approximate exchange algorithm. By
+default it uses adaptive Metropolis-Hastings. The two components are
+independent and run in parallel with `cores`, as do several chains. A short run looks like this:
+
+```{r quick}
+f <- ~ edges + nodematch("Party", diff = TRUE, levels = "R") +
+  gwdegree(0.2, fixed = TRUE) + gwesf_pos(0.6) + gwese_pos(0.6) + gwese_neg(0.6)
+
+quick <- bstergm_sign(f, data = senate, iters = 300, burn.in = 100, seed = 1, verbose = FALSE)
+quick
+```
+
+Each iteration runs one auxiliary network simulation per transition and
+component, started at the observed network. Their length is set by default to
+three proposals per free dyad (see `control.bstergm()`). Chains start at a
+pooled maximum pseudo-likelihood estimate, which also gives the initial
+proposal covariance; `init = "ads"` instead runs adaptive direction sampling
+first, the scheme used by Caimo and Gollini. Results are reproducible with
+`seed`, whatever the number of cores.
+
+```{r load, include = FALSE}
+fit <- readRDS(system.file("extdata", "senate_fit.rds", package = "Bstergm"))
+fit_x <- readRDS(system.file("extdata", "senate_fit_interaction.rds", package = "Bstergm"))
+mins <- round(fit$time$total / 60)
+```
+
+The analysis below used two chains of 35,000 iterations, with a 10,000
+iteration burn-in and the priors of the paper: $N(-1, 25)$ for the edges
+parameter and $N(0, 25)$ for the others. It took `r mins` minutes on two
+cores; on the same machine, version 0.1 of the package would have needed
+about 3 days. The result is shipped with the package:
+
+```{r long, eval = FALSE}
+fit <- bstergm_sign(f, data = senate, iters = 35000, burn.in = 10000, thin = 25,
+                    n_chains = 2, cores = 2, seed = 2025,
+                    prior.mean = c(-1, 0, 0, 0, 0, 0), prior.sigma = 25)
+```
+
+```{r load-show, eval = FALSE}
+fit <- readRDS(system.file("extdata", "senate_fit.rds", package = "Bstergm"))
+```
+
+```{r summary-fit}
+summary(fit)
+```
+
+The R-hat values are close to 1 and the effective sample sizes are large.
+The trace, density and autocorrelation plots of each parameter are given by:
+
+```{r trace, fig.height = 9}
+plot(fit, components = "F")
+```
+
+## Interpretation
+
+Taken at face value, the formation and persistence of positive ties both show
+transitivity among friends ($\text{gwesf}^+ > 0$), while negative ties whose
+endpoints share many enemies are unlikely to form or persist
+($\text{gwese}^- < 0$). Both are in line with strong structural balance.
+Positive ties are also more likely between Republicans. The posterior
+probability that each effect is positive summarises the evidence for its
+direction:
+
+```{r interpret}
+sapply(fit$theta, function(a) round(apply(a, 2, function(v) mean(v > 0)), 3))
+```
+
+The next two sections show that, for this model, these estimates must be read
+with care.
+
+## Goodness of fit
+
+`bgof()` simulates the formation and persistence networks of each transition
+from the posterior predictive distribution. It returns the centred cumulative
+differences $\sum_t \{s(z'_t) - s(z_t)\}$ of the model statistics, which
+should be centred at zero for a well-fitting model, together with any other
+monitored statistics. By default the simulations are five times longer than
+those used for fitting, so the check is not tied to the fitting length:
+
+```{r gof}
+gf <- bgof(fit, nsim = 50, seed = 1, verbose = FALSE,
+           monitor = ~ degree(0:12) + degree_neg(0:12) + triangle_signed())
+gs <- summary(gf)
+gs$F[c(1:6, 33:36), ]
+plot(gf, type = "model")
+```
+
+```{r gof-monitor, fig.height = 7}
+plot(gf, type = "monitor")
+```
+
+The simulated formation networks have on average
+`r round(gs$F["edges", "mean"])` positive ties over the two transitions,
+against `r round(gs$F["edges", "observed"])` observed, and
+`r round(gs$F["triangle_signed++-", "mean"])` unbalanced `++-` triangles,
+against `r round(gs$F["triangle_signed++-", "observed"])`. The model
+statistics are not centred at zero. The next section shows why.
+
+## Checking the auxiliary simulations
+
+The approximate exchange algorithm treats the end of each auxiliary
+simulation, which starts at the observed network, as an exact draw from the
+model. `aux_diagnostics()` checks this assumption. It runs much longer
+simulations from the observed networks at the posterior mean and records the
+model statistics. In the plots, the dashed line is the observed value and
+the dotted vertical line the length used for fitting:
+
+```{r auxdiag, fig.height = 5.5}
+dg <- aux_diagnostics(fit, visits = 50, seed = 1)
+dg
+plot(dg)
+```
+
+```{r auxdiag-values, include = FALSE}
+trF <- dg$results$F$traj$t1[[1]]$stats
+half <- seq_len(nrow(trF)) > nrow(trF) / 2
+lr <- round(colMeans(trF[half, ]))
+```
+
+With three proposals per free dyad the simulated networks stay close to the
+observed ones. Longer simulations move away from them: in the first formation
+network, positive ties grow from `r round(trF[1, 1])` to about `r lr[1]`, and
+the negative ties weighted by shared enemies ($\text{gwese}^-$) fall from
+`r round(trF[1, 6])` to about `r lr[6]`. All-negative triangles almost
+disappear, while unbalanced `++-` triangles become far more frequent than
+observed (see the goodness-of-fit plots). At these parameter values the
+model's stationary distribution is far from the data, and the auxiliary
+simulations used for fitting are far from stationarity. The sampled
+distribution is then a local, contrastive-divergence-like approximation
+around the observed networks rather than the posterior of the model.
+
+Longer auxiliary simulations (`aux.iters`, or
+`control.bstergm(aux.visits =)`) move the approximation towards the posterior
+of the model, at a cost that grows linearly. For models like this one,
+`aux_diagnostics()` and `bgof()` should be checked before the estimates are
+interpreted, and models less prone to degeneracy should be considered.
+
+## The interaction process: binary networks
+
+The interaction layer is a sequence of binary networks and follows an
+ordinary separable temporal ERGM. Formation networks contain the previous
+interactions, and persistence networks are contained in them. It is fitted
+with `bstergm()` and ordinary ergm terms. `bstergm()` accepts a signed series,
+whose interactions it uses, or any list of binary adjacency matrices or
+`network` objects, which `network_series()` converts:
+
+```{r interaction, eval = FALSE}
+fit_x <- bstergm(~ edges + nodematch("Party", diff = TRUE, levels = "R") +
+                   gwdegree(0.2, fixed = TRUE) + gwesp(0.6, fixed = TRUE),
+                 data = senate, iters = 35000,
+                 burn.in = 10000, thin = 25, n_chains = 2, cores = 2, seed = 2025,
+                 prior.mean = c(-1, 0, 0, 0), prior.sigma = 25)
+```
+
+```{r interaction-summary}
+summary(fit_x)
+```
+
+Some of these posteriors are as wide as the prior. In these dense networks
+the pairs that could start interacting already have many shared partners, and
+all senators have high degrees. On the formation sample space the change
+statistic of `gwesp(0.6)` is therefore almost constant and that of
+`gwdegree(0.2)` is zero, so these parameters are not identified separately
+from `edges` (`ergmMPLE()` warns about the linear dependence). The draws of
+`edges` and `gwesp` are perfectly correlated:
+
+```{r interaction-ridge}
+round(cor(as.matrix(as.mcmc.list(fit_x, components = "F"))), 2)
+```
+
+Their combination, which gives the probability that a new interaction forms,
+is well determined, so predictions are not affected, but the separate
+parameters should not be interpreted. Dropping `gwdegree()`, or using terms
+whose change statistics vary on the sample space, avoids the problem.
+
+## Simulation and forecasting
+
+`simulate()` returns posterior predictive replicates of the observed
+transitions: the formation and persistence networks and the signed networks
+they imply at each time point, given the observed interactions:
+
+```{r simulate}
+sims <- simulate(fit, nsim = 1, seed = 2)
+sapply(sims[[1]]$y, signed_triad_census)
+```
+
+`predict()` forecasts future networks. A `bstergm()` fit alone forecasts
+binary networks:
+
+```{r predict-binary}
+summary(predict(fit_x, horizon = 1, nsim = 20, seed = 3, verbose = FALSE))
+```
+
+With a `bstergm_sign()` fit of the signs as well, it forecasts signed
+networks. At each step it simulates the formation and persistence of
+interactions, then the signs of the new and persisting interactions:
+
+```{r predict}
+fc <- predict(fit, fit_x, horizon = 1, nsim = 20, seed = 3, verbose = FALSE)
+summary(fc)
+```
+
+Here the forecasts inherit the drift of the sign model described above.
+
+## Further options
+
+* **Time-varying covariates**: `formula` can be a list with one formula per
+  transition. Lagged dyadic covariates of the previous network are available
+  as `edgecov("lag.pos")`, `edgecov("lag.neg")` and `edgecov("lag.active")`.
+* **Adaptive direction sampling**: `method = "ads"` (or `aea_ads()`) runs a
+  population of interacting chains; `init = "ads"` uses it only to find
+  starting values for adaptive Metropolis-Hastings.
+* **Priors and starting values**: `prior.mean`, `prior.sigma` and `init`
+  accept component-specific values as `list(F = ..., P = ...)`. A previous
+  fit can be passed as `init` to continue its chains.
+* **Static signed ERGMs**: networks built by `as_signed_network()` can be
+  used directly with `ergm::ergm()` and the constraint `~active_signs`.
+* **Version 0.1 code**: `aea_amh()`, `aea_ads()` and `simulate_stats()`
+  accept the arguments of the first version of the package (then called
+  B2Lstergm), including multilayer formulas with the constraint term
+  `L(~edges, active)`. That term is detected and dropped automatically, and
+  the formula is translated into the equivalent native terms when possible.
+
+## References
+
+Caimo, A. and Friel, N. (2011). Bayesian inference for exponential random
+graph models. *Social Networks*, 33(1), 41–55.
+
+Caimo, A. and Gollini, I. (2025). Separable models for dynamic signed
+networks. arXiv:2505.07669.
+
+Haario, H., Saksman, E. and Tamminen, J. (2001). An adaptive Metropolis
+algorithm. *Bernoulli*, 7(2), 223–242.
+
+Krivitsky, P. N. and Handcock, M. S. (2014). A separable model for dynamic
+networks. *Journal of the Royal Statistical Society B*, 76(1), 29–46.
+
+Neal, Z. P. (2020). A sign of the times? Weak and strong polarization in the
+U.S. Congress, 1973–2016. *Social Networks*, 60, 103–112.

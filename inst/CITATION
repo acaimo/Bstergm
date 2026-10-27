@@ -1,0 +1,14 @@
+bibentry(
+  bibtype = "Misc",
+  title = "Separable models for dynamic signed networks",
+  author = c(person("Alberto", "Caimo"), person("Isabella", "Gollini")),
+  year = "2025",
+  eprint = "2505.07669",
+  archivePrefix = "arXiv",
+  primaryClass = "stat.ME",
+  doi = "10.48550/arXiv.2505.07669",
+  url = "https://arxiv.org/abs/2505.07669",
+  textVersion = paste("Caimo, A. and Gollini, I. (2025).",
+                      "Separable models for dynamic signed networks.",
+                      "arXiv:2505.07669. doi:10.48550/arXiv.2505.07669")
+)
