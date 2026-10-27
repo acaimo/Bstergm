@@ -1,5 +1,6 @@
 
-# Bstergm
+# **Bstergm**: Bayesian inference for separable temporal
+exponential random graph models
 
 <!-- badges: start -->
 <!-- badges: end -->
