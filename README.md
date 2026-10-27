@@ -148,5 +148,5 @@ results; see `NEWS.md`.
 
 ## Reference
 
-Caimo, A. and Gollini, I. (2025). Separable models for dynamic signed
-networks. [arXiv:2505.07669](https://arxiv.org/abs/2505.07669).
+Caimo, A., & Gollini, I. (2026). Separable models for dynamic signed networks. 
+Journal of the Royal Statistical Society Series A: Statistics in Society, qnag053.

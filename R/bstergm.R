@@ -189,8 +189,9 @@ control.bstergm <- function(aux.iters = NULL, aux.visits = 3, aux.min = 500,
 #' [as.mcmc.list.bstergm()] to analyse it.
 #'
 #' @references
-#' Caimo, A. and Gollini, I. (2025). Separable models for dynamic signed
-#' networks. arXiv:2505.07669.
+#' Caimo, A., & Gollini, I. (2026). Separable models for dynamic 
+#' signed networks. Journal of the Royal Statistical Society Series A: 
+#' Statistics in Society, qnag053.
 #'
 #' Caimo, A. and Friel, N. (2011). Bayesian inference for exponential random
 #' graph models. \emph{Social Networks}, 33(1), 41-55.

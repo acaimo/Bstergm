@@ -41,8 +41,10 @@
 #' positive ties. Models written with the multilayer terms of
 #' \pkg{ergm.multi} (`L()`, `gwespL()`, ...) are also supported.
 #'
-#' @references Caimo, A. and Gollini, I. (2025). Separable models for dynamic
-#'   signed networks. arXiv:2505.07669. \doi{10.48550/arXiv.2505.07669}
+#' @references 
+#'   Caimo, A., and Gollini, I. (2026). Separable models for dynamic signed 
+#'   networks. Journal of the Royal Statistical Society Series A: Statistics in 
+#'   Society, qnag053.
 #'
 #' @keywords internal
 "_PACKAGE"
